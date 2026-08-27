@@ -1,0 +1,46 @@
+{
+  "name": "free-billing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "dexie": "latest",
+    "dexie-react-hooks": "latest",
+    "papaparse": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router": "^8.3.0",
+    "xlsx": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/papaparse": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitest/browser": "latest",
+    "@vitest/coverage-v8": "latest",
+    "eslint": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-react-refresh": "latest",
+    "globals": "latest",
+    "jsdom": "latest",
+    "playwright": "latest",
+    "prettier": "3.9.6",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}
