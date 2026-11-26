@@ -3,9 +3,11 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../infrastructure/database/db';
 import { summarize } from '../../domain/statistics';
 import { formatMoney } from '../../domain/money';
+import { AnnualSummary } from '../../components/AnnualSummary';
 import { PageHeader } from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard';
-import { CategoryBar, EntryRow } from '../../components/EntryRow';
+import { CategoryBar } from '../../components/EntryRow';
+import { EntryList } from '../../components/EntryList';
 
 export function Dashboard() {
   const entries = useLiveQuery(
@@ -13,6 +15,7 @@ export function Dashboard() {
     [],
     [],
   );
+  const recentEntries = entries.slice(0, 5);
   const summary = summarize(entries, new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   return (
     <>
@@ -57,6 +60,7 @@ export function Dashboard() {
           tone="orange"
         />
       </div>
+      <AnnualSummary entries={entries} />
       <div className="dashboard-columns">
         <section className="panel">
           <div className="panel-heading">
@@ -66,8 +70,8 @@ export function Dashboard() {
             </div>
             <Link to="/transactions">查看全部 →</Link>
           </div>
-          {entries.slice(0, 5).length ? (
-            entries.slice(0, 5).map((entry) => <EntryRow key={entry.id} entry={entry} />)
+          {recentEntries.length ? (
+            <EntryList entries={recentEntries} />
           ) : (
             <EmptyState />
           )}

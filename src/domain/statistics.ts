@@ -1,10 +1,15 @@
 import type { LedgerEntry } from './transaction';
 
-export function summarize(entries: LedgerEntry[], from?: Date, to?: Date) {
-  const filtered = entries.filter((entry) => {
+export function entriesInRange(entries: LedgerEntry[], from?: Date, to?: Date) {
+  if (!from && !to) return entries;
+  return entries.filter((entry) => {
     const time = new Date(entry.occurredAt);
     return (!from || time >= from) && (!to || time < to);
   });
+}
+
+export function summarize(entries: LedgerEntry[], from?: Date, to?: Date) {
+  const filtered = entriesInRange(entries, from, to);
   const expenses = filtered.filter((entry) => entry.direction === 'expense');
   const income = filtered.filter((entry) => entry.direction === 'income');
   const byCategory = Object.entries(expenses.reduce<Record<string, number>>((acc, entry) => {

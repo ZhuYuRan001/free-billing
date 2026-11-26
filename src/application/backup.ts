@@ -1,4 +1,5 @@
 import type { ImportBatch, LedgerEntry, MerchantRule, TransactionEvent } from '../domain/transaction';
+import { getAutomaticMatchCorrections, reconcileChannelMatches } from '../domain/matching';
 import { db } from '../infrastructure/database/db';
 
 type BackupPayload = {
@@ -27,14 +28,18 @@ async function deriveKey(password: string, salt: Uint8Array) {
 }
 
 export async function exportBackup(password: string): Promise<Blob> {
-  const payload: BackupPayload = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    importBatches: await db.importBatches.toArray(),
-    transactionEvents: await db.transactionEvents.toArray(),
-    ledgerEntries: await db.ledgerEntries.toArray(),
-    merchantRules: await db.merchantRules.toArray(),
-  };
+  const payload: BackupPayload = await db.transaction(
+    'r',
+    [db.importBatches, db.transactionEvents, db.ledgerEntries, db.merchantRules],
+    async () => ({
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      importBatches: await db.importBatches.toArray(),
+      transactionEvents: await db.transactionEvents.toArray(),
+      ledgerEntries: await db.ledgerEntries.toArray(),
+      merchantRules: await db.merchantRules.toArray(),
+    }),
+  );
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(password, salt);
@@ -48,11 +53,21 @@ export async function restoreBackup(file: File, password: string) {
   const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes(envelope.iv) }, key, bytes(envelope.data));
   const payload = JSON.parse(decoder.decode(decrypted)) as BackupPayload;
   if (payload.version !== 1) throw new Error('不支持的备份版本');
+  const activeEvents = payload.transactionEvents.filter((event) => !event.ledgerDeletedAt);
+  const corrections = getAutomaticMatchCorrections(
+    payload.ledgerEntries,
+    activeEvents,
+    payload.merchantRules,
+  );
+  const entries = reconcileChannelMatches(
+    payload.ledgerEntries.flatMap((entry) => corrections.get(entry.id) ?? [entry]),
+    activeEvents,
+  );
   await db.transaction('rw', db.importBatches, db.transactionEvents, db.ledgerEntries, db.merchantRules, async () => {
     await Promise.all([db.importBatches.clear(), db.transactionEvents.clear(), db.ledgerEntries.clear(), db.merchantRules.clear()]);
     await db.importBatches.bulkAdd(payload.importBatches);
     await db.transactionEvents.bulkAdd(payload.transactionEvents);
-    await db.ledgerEntries.bulkAdd(payload.ledgerEntries);
+    await db.ledgerEntries.bulkAdd(entries);
     await db.merchantRules.bulkAdd(payload.merchantRules);
   });
 }

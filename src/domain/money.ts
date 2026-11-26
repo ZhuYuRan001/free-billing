@@ -2,6 +2,7 @@ export function parseAmountMinor(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return Math.round(value * 100);
   if (typeof value !== 'string') return null;
   const normalized = value.replace(/[¥￥,\s]/g, '').replace(/元$/, '');
+  if (!normalized) return null;
   const amount = Number(normalized);
   return Number.isFinite(amount) ? Math.round(amount * 100) : null;
 }
